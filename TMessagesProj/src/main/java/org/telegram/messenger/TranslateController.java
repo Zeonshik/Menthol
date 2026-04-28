@@ -101,9 +101,6 @@ public class TranslateController extends BaseController {
     private Boolean contextTranslateEnabled;
 
     public boolean isChatTranslateEnabled() {
-        if (!getMessagesController().isTranslationsAutoEnabled()) {
-            return false;
-        }
         if (chatTranslateEnabled == null) {
             chatTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_chat_button", true);
         }
@@ -237,8 +234,9 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isDialogTranslatable(long dialogId) {
+        TLRPC.User user = DialogObject.isUserDialog(dialogId) ? getMessagesController().getUser(dialogId) : null;
         return (
-            (translatableDialogs.contains(dialogId) || DialogObject.isUserDialog(dialogId)) &&
+            (translatableDialogs.contains(dialogId) || user != null && !user.bot) &&
             isFeatureAvailable(dialogId) &&
             !DialogObject.isEncryptedDialog(dialogId) &&
             getUserConfig().getClientUserId() != dialogId

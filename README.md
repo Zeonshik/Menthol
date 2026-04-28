@@ -22,6 +22,8 @@
 <p align="center">
   <a href="https://github.com/Zeonshik/Menthol/releases">Downloads</a>
   ·
+  <a href="https://t.me/MentholGram">Telegram Channel</a>
+  ·
   <a href="https://github.com/Zeonshik/Menthol/issues">Report an issue</a>
 </p>
 
@@ -43,6 +45,12 @@
 
 ```text
 https://github.com/Zeonshik/Menthol/releases
+```
+
+Telegram-канал проекта где вы можете сообщить о проблемах или как то помочь проекту:
+
+```text
+https://t.me/MentholGram
 ```
 
 Рекомендуемые APK:

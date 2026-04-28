@@ -166,6 +166,7 @@ import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageCustomParamsHelper;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagePreviewParams;
 import org.telegram.messenger.MessageSuggestionParams;
@@ -194,6 +195,7 @@ import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
@@ -25600,7 +25602,7 @@ public class ChatActivity extends BaseFragment implements
         boolean updated = false;
         LongSparseArray<MessageObject.GroupedMessages> newGroups = null;
         LongSparseArray<Integer> newGroupsSizes = null;
-        int size = markAsDeletedMessages.size();
+        int size;
         boolean updatedSelected = false;
         boolean updatedSelectedLast = false;
         boolean updateScheduled = false;
@@ -25620,21 +25622,51 @@ public class ChatActivity extends BaseFragment implements
             }
         }
 
+        if (!sent && !markAsDeletedMessages.isEmpty()) {
+            ArrayList<Integer> messagesToDelete = null;
+            ArrayList<MessageObject> deletedPlaceholders = null;
+            for (int a = 0, N = markAsDeletedMessages.size(); a < N; a++) {
+                Integer mid = markAsDeletedMessages.get(a);
+                MessageObject obj = chatAdapter != null && chatAdapter.isFiltered ? filteredMessagesDict.get(mid) : messagesDict[loadIndex].get(mid);
+                if (shouldKeepDeletedMessage(obj, sent)) {
+                    if (selectedObject != null && obj == selectedObject || obj != null && selectedObjectGroup != null && selectedObjectGroup == groupedMessagesMap.get(obj.getGroupId())) {
+                        closeMenu();
+                    }
+                    obj.messageOwner.savedDeleted = true;
+                    obj.deleted = false;
+                    getMessagesStorage().updateMessageCustomParams(obj.getDialogId(), obj.messageOwner);
+                    MessageObject placeholder = createDeletedPlaceholder(obj);
+                    if (placeholder != null) {
+                        if (deletedPlaceholders == null) {
+                            deletedPlaceholders = new ArrayList<>();
+                        }
+                        deletedPlaceholders.add(placeholder);
+                    }
+                }
+                if (messagesToDelete == null) {
+                    messagesToDelete = new ArrayList<>();
+                }
+                messagesToDelete.add(mid);
+            }
+            final ArrayList<MessageObject> placeholdersToAdd = deletedPlaceholders;
+            if (messagesToDelete == null || messagesToDelete.isEmpty()) {
+                if (placeholdersToAdd != null) {
+                    addDeletedPlaceholders(placeholdersToAdd, loadIndex);
+                }
+                return;
+            }
+            markAsDeletedMessages = messagesToDelete;
+            if (placeholdersToAdd != null) {
+                final int finalLoadIndex = loadIndex;
+                AndroidUtilities.runOnUIThread(() -> addDeletedPlaceholders(placeholdersToAdd, finalLoadIndex));
+            }
+        }
+
+        size = markAsDeletedMessages.size();
         int commentsDeleted = 0;
         for (int a = 0; a < size; a++) {
             Integer mid = markAsDeletedMessages.get(a);
             MessageObject obj = chatAdapter != null && chatAdapter.isFiltered ? filteredMessagesDict.get(mid) :  messagesDict[loadIndex].get(mid);
-            if (shouldKeepDeletedMessage(obj, sent)) {
-                if (selectedObject != null && obj == selectedObject || obj != null && selectedObjectGroup != null && selectedObjectGroup == groupedMessagesMap.get(obj.getGroupId())) {
-                    closeMenu();
-                }
-                obj.messageOwner.savedDeleted = true;
-                obj.deleted = false;
-                if (chatAdapter != null) {
-                    chatAdapter.updateRowWithMessageObject(obj, true, false);
-                }
-                continue;
-            }
             if (selectedObject != null && obj == selectedObject || obj != null && selectedObjectGroup != null && selectedObjectGroup == groupedMessagesMap.get(obj.getGroupId())) {
                 closeMenu();
             }
@@ -25939,7 +25971,85 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean shouldKeepDeletedMessage(MessageObject messageObject, boolean sent) {
-        return messageObject != null && messageObject.messageOwner != null && !messageObject.deleted && !messageObject.isSavedDeleted() && !sent && !messageObject.scheduled;
+        return messageObject != null && messageObject.messageOwner != null && !messageObject.isOutOwner() && !messageObject.isSavedDeleted() && !sent && !messageObject.scheduled;
+    }
+
+    private MessageObject createDeletedPlaceholder(MessageObject source) {
+        if (source == null || source.messageOwner == null || source.getId() <= 0) {
+            return null;
+        }
+        int placeholderId = -Math.abs(source.getId());
+        TLRPC.Message message = cloneMessage(source.messageOwner);
+        if (message == null) {
+            return null;
+        }
+        message.realId = source.getId();
+        message.id = placeholderId;
+        message.local_id = placeholderId;
+        message.grouped_id = 0;
+        message.savedDeleted = true;
+        MessageObject placeholder = new MessageObject(currentAccount, message, true, true);
+        placeholder.messageOwner.savedDeleted = true;
+        placeholder.deleted = false;
+        placeholder.stableId = lastStableId++;
+        return placeholder;
+    }
+
+    private void addDeletedPlaceholders(ArrayList<MessageObject> placeholders, int loadIndex) {
+        if (placeholders == null || placeholders.isEmpty()) {
+            return;
+        }
+        boolean changed = false;
+        for (int i = 0; i < placeholders.size(); i++) {
+            MessageObject placeholder = placeholders.get(i);
+            if (placeholder == null || messagesDict[loadIndex].get(placeholder.getId()) != null) {
+                continue;
+            }
+            messagesDict[loadIndex].put(placeholder.getId(), placeholder);
+            int insertIndex = 0;
+            while (insertIndex < messages.size() && messages.get(insertIndex).getId() > placeholder.getRealId()) {
+                insertIndex++;
+            }
+            messages.add(insertIndex, placeholder);
+
+            ArrayList<MessageObject> dayArray = messagesByDays.get(placeholder.dateKey);
+            if (dayArray == null) {
+                dayArray = new ArrayList<>();
+                messagesByDays.put(placeholder.dateKey, dayArray);
+                messagesByDaysSorted.put(placeholder.dateKeyInt, dayArray);
+            }
+            if (!dayArray.contains(placeholder)) {
+                dayArray.add(placeholder);
+            }
+            changed = true;
+        }
+        if (changed && chatAdapter != null && !chatAdapter.isFrozen) {
+            chatAdapter.notifyDataSetChanged(false);
+            updateVisibleRows();
+        }
+    }
+
+    private TLRPC.Message cloneMessage(TLRPC.Message source) {
+        NativeByteBuffer data = null;
+        try {
+            data = new NativeByteBuffer(source.getObjectSize());
+            source.serializeToStream(data);
+            data.rewind();
+            TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+            if (message != null) {
+                MessageCustomParamsHelper.copyParams(source, message);
+                message.attachPath = source.attachPath;
+                message.dialog_id = source.dialog_id;
+            }
+            return message;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        } finally {
+            if (data != null) {
+                data.reuse();
+            }
+        }
     }
 
     private final BotForumHelper.BotDraftAnimationsPool botDraftAnimationsPool = new BotForumHelper.BotDraftAnimationsPool();

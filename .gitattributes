@@ -1,0 +1,7 @@
+TMessagesProj/libs/libv2ray.aar linguist-vendored
+*.aar binary
+*.jar binary
+*.apk binary
+*.aab binary
+*.png binary
+*.webp binary

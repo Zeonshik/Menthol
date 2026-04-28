@@ -26,18 +26,18 @@ public class BuildVars {
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
     public static String BUILD_VERSION_STRING = BuildConfig.BUILD_VERSION_STRING;
 
-    // Set your own Telegram API credentials before building a usable APK:
+    // Replace with your own Telegram API credentials before building a usable APK:
     // https://core.telegram.org/api/obtaining_api_id
-    public static int APP_ID = 0;
-    public static String APP_HASH = "";
+    public static int APP_ID = 0; // YOUR_API_ID
+    public static String APP_HASH = "YOUR_API_HASH";
 
     // SafetyNet key for Google Identity SDK, set it to empty to disable
     public static String SAFETYNET_KEY = "";
     public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=ru.menthol.app";
-    public static String HUAWEI_STORE_URL = "";
-    public static String GOOGLE_AUTH_CLIENT_ID = "";
+    public static String HUAWEI_STORE_URL = "YOUR_HUAWEI_STORE_URL";
+    public static String GOOGLE_AUTH_CLIENT_ID = "YOUR_GOOGLE_AUTH_CLIENT_ID";
 
-    public static String HUAWEI_APP_ID = "";
+    public static String HUAWEI_APP_ID = "YOUR_HUAWEI_APP_ID";
 
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)
     public static boolean IS_BILLING_UNAVAILABLE = true;

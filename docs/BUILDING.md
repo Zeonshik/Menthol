@@ -2,7 +2,7 @@
 
 Эта инструкция нужна для тех, кто собирает Menthol из исходников.
 
-В репозитории не должны храниться приватные ключи, реальные `google-services.json`, `agconnect-services.json`, keystore и локальные пароли. Все эти файлы нужно создать или скачать самостоятельно.
+В репозитории не храняться приватные ключи, `google-services.json`, `agconnect-services.json`, keystore и локальные пароли. Все эти файлы нужно создать или скачать самостоятельно.
 
 ## 1. Требования
 
@@ -51,8 +51,8 @@ TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
 И замените:
 
 ```java
-public static int APP_ID = 0;
-public static String APP_HASH = "";
+public static int APP_ID = 0; // YOUR_API_ID
+public static String APP_HASH = "YOUR_API_HASH";
 ```
 
 На свои значения.
