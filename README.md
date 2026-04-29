@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/Zeonshik/Menthol/releases">
-    <img src="https://img.shields.io/github/v/release/Zeonshik/Menthol?style=for-the-badge&label=pre-release" alt="Release" />
+    <img src="https://img.shields.io/github/v/release/Zeonshik/Menthol?style=for-the-badge&label=Release" alt="Release" />
   </a>
   <a href="https://github.com/Zeonshik/Menthol/releases">
     <img src="https://img.shields.io/github/downloads/Zeonshik/Menthol/total?style=for-the-badge" alt="Downloads" />
