@@ -5,7 +5,7 @@
 <h1 align="center">Menthol</h1>
 
 <p align="center">
-  Unofficial Telegram client for Android based on Telegram 12.6.4
+  Unofficial Telegram client for Android based on Telegram
 </p>
 
 <p align="center">
