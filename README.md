@@ -5,7 +5,7 @@
 <h1 align="center">Menthol</h1>
 
 <p align="center">
-  Unofficial Telegram client for Android based on Telegram
+  An unofficial Telegram client with a built-in proxy server and minor improvements 
 </p>
 
 <p align="center">
